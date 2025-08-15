@@ -2,6 +2,7 @@ from flask import Flask, request, Response
 from PIL import Image
 import requests
 import io
+import struct
 
 app = Flask(__name__)
 
@@ -13,28 +14,23 @@ def convert_and_stream():
 
     try:
         response = requests.get(image_url)
-        img = Image.open(io.BytesIO(response.content))
+        img = Image.open(io.BytesIO(response.content)).resize((240, 240)).convert('RGB')
     except Exception:
         return "Erreur lors de l'ouverture de l'image", 400
 
-    try:
-        # Assurez-vous d'abord que le mode est RGB
-        img = img.convert("RGB")
+    # Conversion manuelle de RGB en RGB565
+    width, height = img.size
+    rgb_data = img.tobytes()
+    rgb565_data = bytearray(width * height * 2)
 
-        # Convertissez l'image au format RGB565
-        # Les données de l'image sont maintenant au bon format
-        data_rgb565 = img.tobytes()
+    for i in range(width * height):
+        r = rgb_data[i*3] >> 3
+        g = rgb_data[i*3 + 1] >> 2
+        b = rgb_data[i*3 + 2] >> 3
+        pixel = (r << 11) | (g << 5) | b
+        struct.pack_into('<H', rgb565_data, i * 2, pixel)
 
-        # Recréez une image Pillow au format RGB565
-        img_final = Image.frombytes("RGB565", img.size, data_rgb565)
-
-        # Redimensionnez l'image finale
-        img_final = img_final.resize((240, 240))
-
-    except Exception as e:
-        return f"Erreur de conversion: {e}", 500
-
-    output_stream = io.BytesIO(img_final.tobytes())
+    output_stream = io.BytesIO(rgb565_data)
     output_stream.seek(0)
 
     return Response(output_stream, mimetype='application/octet-stream')
