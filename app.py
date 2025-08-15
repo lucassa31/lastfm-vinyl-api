@@ -17,13 +17,13 @@ def convert_and_stream():
     except Exception:
         return "Erreur lors de l'ouverture de l'image", 400
 
-    # L'image est d'abord convertie en RGB
+    # Redimensionnement en premier
+    img = img.resize((240, 240))
+    
+    # Conversion en RGB
     img = img.convert('RGB')
     
-    # Puis redimensionnée
-    img = img.resize((240, 240))
-
-    # Et convertie en RGB565 avec le dither
+    # Conversion finale en RGB565 (cela devrait fonctionner maintenant)
     img = img.convert('RGB565', dither=Image.NONE)
 
     output_stream = io.BytesIO(img.tobytes())
