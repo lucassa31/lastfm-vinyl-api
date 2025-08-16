@@ -3,6 +3,7 @@ from PIL import Image
 import requests
 import io
 import struct
+import base64
 
 app = Flask(__name__)
 
@@ -18,7 +19,7 @@ def convert_and_stream():
     except Exception:
         return "Erreur lors de l'ouverture de l'image", 400
 
-    # Conversion manuelle de RGB en RGB565
+    # Conversion RGB -> RGB565
     width, height = img.size
     rgb_data = img.tobytes()
     rgb565_data = bytearray(width * height * 2)
@@ -30,10 +31,26 @@ def convert_and_stream():
         pixel = (r << 11) | (g << 5) | b
         struct.pack_into('<H', rgb565_data, i * 2, pixel)
 
-    output_stream = io.BytesIO(rgb565_data)
-    output_stream.seek(0)
+    # Encode en Base64 pour insérer dans un fichier Python
+    b64_data = base64.b64encode(rgb565_data).decode('ascii')
 
-    return Response(output_stream, mimetype='application/octet-stream')
+    # Contenu du fichier ui_images.py
+    python_file_content = f"""# Ce fichier est généré automatiquement
+import base64
+
+width = {width}
+height = {height}
+rgb565_b64 = \"\"\"{b64_data}\"\"\"
+
+def get_image_bytes():
+    return base64.b64decode(rgb565_b64)
+"""
+
+    return Response(
+        python_file_content,
+        mimetype='text/plain',
+        headers={"Content-Disposition": "attachment; filename=ui_images.py"}
+    )
 
 if __name__ == '__main__':
     app.run()
