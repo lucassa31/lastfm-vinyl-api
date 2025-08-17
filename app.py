@@ -3,7 +3,6 @@ from PIL import Image
 import requests
 import io
 import struct
-import base64
 
 app = Flask(__name__)
 
@@ -31,25 +30,11 @@ def convert_and_stream():
         pixel = (r << 11) | (g << 5) | b
         struct.pack_into('<H', rgb565_data, i * 2, pixel)
 
-    # Encode en Base64 pour insérer dans un fichier Python
-    b64_data = base64.b64encode(rgb565_data).decode('ascii')
-
-    # Contenu du fichier ui_images.py
-    python_file_content = f"""# Ce fichier est généré automatiquement
-import base64
-
-width = {width}
-height = {height}
-rgb565_b64 = \"\"\"{b64_data}\"\"\"
-
-def get_image_bytes():
-    return base64.b64decode(rgb565_b64)
-"""
-
+    # Retourne les données binaires directement
     return Response(
-        python_file_content,
-        mimetype='text/plain',
-        headers={"Content-Disposition": "attachment; filename=ui_images.py"}
+        rgb565_data,
+        mimetype='application/octet-stream',
+        headers={"Content-Disposition": "attachment; filename=album_art.bin"}
     )
 
 if __name__ == '__main__':
