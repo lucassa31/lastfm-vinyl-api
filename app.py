@@ -32,10 +32,11 @@ def convert_and_stream():
 
     # Retourne les données binaires directement
     return Response(
-        rgb565_data,
+        bytes(rgb565_data),
         mimetype='application/octet-stream',
         headers={"Content-Disposition": "attachment; filename=album_art.bin"}
     )
 
 if __name__ == '__main__':
     app.run()
+
