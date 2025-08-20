@@ -3,40 +3,63 @@ from PIL import Image
 import requests
 import io
 import struct
+import textwrap
 
 app = Flask(__name__)
 
-@app.route('/convert_and_stream', methods=['GET'])
-def convert_and_stream():
+@app.route('/convert_and_generate_py', methods=['GET'])
+def convert_and_generate_py():
     image_url = request.args.get('url')
     if not image_url:
         return "URL d'image manquante", 400
 
     try:
         response = requests.get(image_url)
-        img = Image.open(io.BytesIO(response.content)).resize((240, 240)).convert('RGB')
+        img = Image.open(io.BytesIO(response.content)).resize((64, 64)).convert('RGBA')
     except Exception:
         return "Erreur lors de l'ouverture de l'image", 400
 
-    # Conversion RGB -> RGB565
     width, height = img.size
-    rgb_data = img.tobytes()
-    rgb565_data = bytearray(width * height * 2)
+    rgba_data = img.tobytes()
 
+    # Format LVGL: CF.TRUE_COLOR_ALPHA = 32 bits ARGB (8 bits chacun)
+    # On construit les octets dans l'ordre attendu
+    py_bytes = bytearray()
     for i in range(width * height):
-        r = rgb_data[i*3] >> 3
-        g = rgb_data[i*3 + 1] >> 2
-        b = rgb_data[i*3 + 2] >> 3
-        pixel = (r << 11) | (g << 5) | b
-        struct.pack_into('<H', rgb565_data, i * 2, pixel)
+        r = rgba_data[i*4]
+        g = rgba_data[i*4 + 1]
+        b = rgba_data[i*4 + 2]
+        a = rgba_data[i*4 + 3]
+        py_bytes.extend([r, g, b, a])
 
-    # Retourne les données binaires directement
+    # Transformation en chaîne b'....'
+    hex_str = ''.join(f'\\x{b:02X}' for b in py_bytes)
+
+    # On découpe pour pas avoir une seule ligne immense
+    wrapped = textwrap.fill(hex_str, width=64*4*4)  
+
+    py_code = f"""import lvgl as lv
+
+Image_data = b'{wrapped}'
+
+Image = lv.img_dsc_t({{
+    'header': {{
+        'always_zero': 0,
+        'w': {width},
+        'h': {height},
+        'cf': lv.img.CF.TRUE_COLOR_ALPHA
+    }},
+    'data_size': len(Image_data),
+    'data': Image_data
+}})
+"""
+
     return Response(
-        bytes(rgb565_data),
-        mimetype='application/octet-stream',
-        headers={"Content-Disposition": "attachment; filename=album_art.bin"}
+        py_code,
+        mimetype="text/x-python",
+        headers={"Content-Disposition": "attachment; filename=album_art.py"}
     )
+
 
 if __name__ == '__main__':
     app.run()
-
