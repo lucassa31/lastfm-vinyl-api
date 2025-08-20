@@ -2,6 +2,7 @@ from flask import Flask, request, Response
 from PIL import Image
 import requests
 import io
+import textwrap
 
 app = Flask(__name__)
 
@@ -20,31 +21,36 @@ def convert_and_generate_py():
     width, height = img.size
     rgba_data = img.tobytes()
 
-    # LVGL: CF.TRUE_COLOR_ALPHA = 32 bits ARGB
-    py_bytes = bytearray()
+    # LVGL attend ARGB
+    lv_bytes = bytearray()
     for i in range(width * height):
         r = rgba_data[i*4]
         g = rgba_data[i*4 + 1]
         b = rgba_data[i*4 + 2]
         a = rgba_data[i*4 + 3]
-        # LVGL attend l'ordre ARGB
-        py_bytes.extend([a, r, g, b])
+        lv_bytes.extend([a, r, g, b])
 
-    # On écrit directement comme bytes, pas de chaîne avec \x
+    # Conversion en chaîne hexadécimale
+    hex_str = ''.join(f'\\x{b:02X}' for b in lv_bytes)
+    # Découpage en lignes pour ressembler à ui.ipages
+    wrapped = textwrap.fill(hex_str, width=64*4)  
+
     py_code = f"""import lvgl as lv
 
-Image_data = {list(py_bytes)}
+TemporaryImage_data = b'{wrapped}'
 
-Image = lv.img_dsc_t({{
+TemporaryImage = lv.img_dsc_t({{
     'header': {{
         'always_zero': 0,
         'w': {width},
         'h': {height},
         'cf': lv.img.CF.TRUE_COLOR_ALPHA
     }},
-    'data_size': len(Image_data),
-    'data': bytes(Image_data)
+    'data_size': len(TemporaryImage_data),
+    'data': TemporaryImage_data
 }})
+
+TemporaryImageArray = [TemporaryImage, TemporaryImage]
 """
 
     return Response(
