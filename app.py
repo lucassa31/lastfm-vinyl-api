@@ -15,7 +15,7 @@ def convert_and_generate_py():
 
     try:
         response = requests.get(image_url)
-        img = Image.open(io.BytesIO(response.content)).resize((64, 64)).convert('RGBA')
+        img = Image.open(io.BytesIO(response.content)).convert('RGBA')
     except Exception:
         return "Erreur lors de l'ouverture de l'image", 400
 
@@ -63,3 +63,4 @@ Image = lv.img_dsc_t({{
 
 if __name__ == '__main__':
     app.run()
+
