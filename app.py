@@ -18,6 +18,21 @@ def convert_and_generate_py():
     except Exception:
         return "Erreur lors de l'ouverture de l'image", 400
 
+    try:
+        headers = {
+            "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36"
+        }
+        response = requests.get(image_url, headers=headers)
+        img = Image.open(io.BytesIO(response.content)).convert('RGBA')
+    
+    # Ajoutez cette ligne pour le débogage :
+        print(f"Dimensions de l'image Pillow : {img.size}")
+    
+    except Exception as e:
+        print(f"Erreur lors de l'ouverture de l'image: {e}")
+        return "Erreur lors de l'ouverture de l'image", 400
+
+    
     width, height = img.size
     rgba_data = img.tobytes()
 
@@ -61,3 +76,4 @@ TemporaryImageArray = [TemporaryImage, TemporaryImage]
 
 if __name__ == '__main__':
     app.run()
+
