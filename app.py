@@ -32,7 +32,7 @@ def convert_and_generate_py():
         b = rgb_data[i*3 + 2]
         
         rgb565 = ((r >> 3) << 11) | ((g >> 2) << 5) | (b >> 3)
-        lv_bytes.extend(struct.pack('>H', rgb565))
+        lv_bytes.extend(struct.pack('<H', rgb565))
 
     # Convertit les octets en une chaîne hexadécimale échappée
     hex_str = ''.join(f'\\x{b:02X}' for b in lv_bytes)
@@ -66,3 +66,4 @@ TemporaryImage = lv.img_dsc_t({{
 
 if __name__ == '__main__':
     app.run()
+
