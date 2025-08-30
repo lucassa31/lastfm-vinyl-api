@@ -20,7 +20,7 @@ def convert_and_generate():
         
         # Ouvre et redimensionne l'image pour correspondre à l'écran de 800x480
         img = Image.open(io.BytesIO(response.content))
-        img = img.resize((800, 480), Image.LANCZOS).convert('RGB')
+        img = img.resize((480, 480), Image.LANCZOS).convert('RGB')
         
     except Exception as e:
         return f"Erreur lors de l'ouverture ou du redimensionnement de l'image: {e}", 400
@@ -45,3 +45,4 @@ def convert_and_generate():
 
 if __name__ == '__main__':
     app.run()
+
