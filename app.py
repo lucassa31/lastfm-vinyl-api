@@ -17,9 +17,13 @@ def convert_and_generate():
             "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36"
         }
         response = requests.get(image_url, headers=headers)
-        img = Image.open(io.BytesIO(response.content)).convert('RGB')
+        
+        # Ouvre et redimensionne l'image pour correspondre à l'écran de 800x480
+        img = Image.open(io.BytesIO(response.content))
+        img = img.resize((800, 480), Image.LANCZOS).convert('RGB')
+        
     except Exception as e:
-        return f"Erreur lors de l'ouverture de l'image: {e}", 400
+        return f"Erreur lors de l'ouverture ou du redimensionnement de l'image: {e}", 400
 
     width, height = img.size
     rgb_data = img.tobytes()
@@ -33,9 +37,8 @@ def convert_and_generate():
         rgb565 = ((r >> 3) << 11) | ((g >> 2) << 5) | (b >> 3)
         lv_bytes.extend(struct.pack('<H', rgb565))
 
-    # Convert the bytearray to a bytes object before returning
     return Response(
-        bytes(lv_bytes), # CHANGE IS HERE!
+        bytes(lv_bytes),
         mimetype="application/octet-stream",
         headers={"Content-Disposition": "attachment; filename=album_art.bin"}
     )
