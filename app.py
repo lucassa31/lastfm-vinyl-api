@@ -30,13 +30,12 @@ def convert_and_generate():
         g = rgb_data[i*3 + 1]
         b = rgb_data[i*3 + 2]
         
-        # Le format LVGL par défaut est Little-Endian
         rgb565 = ((r >> 3) << 11) | ((g >> 2) << 5) | (b >> 3)
         lv_bytes.extend(struct.pack('<H', rgb565))
 
-    # Retourne les données binaires brutes directement
+    # Convert the bytearray to a bytes object before returning
     return Response(
-        lv_bytes,
+        bytes(lv_bytes), # CHANGE IS HERE!
         mimetype="application/octet-stream",
         headers={"Content-Disposition": "attachment; filename=album_art.bin"}
     )
